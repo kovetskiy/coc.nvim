@@ -190,6 +190,7 @@ export default class Plugin extends EventEmitter {
     this.addAction('diagnosticPreview', () => diagnosticManager.preview())
     this.addAction('diagnosticList', () => diagnosticManager.getDiagnosticList())
     this.addAction('jumpDefinition', openCommand => this.handler.locations.gotoDefinition(openCommand))
+    this.addAction('getDefinition', () => this.handler.locations.getDefinition())
     this.addAction('definitions', () => this.handler.locations.definitions())
     this.addAction('jumpDeclaration', openCommand => this.handler.locations.gotoDeclaration(openCommand))
     this.addAction('declarations', () => this.handler.locations.declarations())
@@ -203,6 +204,7 @@ export default class Plugin extends EventEmitter {
     this.addAction('doHover', hoverTarget => this.handler.hover.onHover(hoverTarget))
     this.addAction('getHover', () => this.handler.hover.getHover())
     this.addAction('showSignatureHelp', () => this.handler.signature.triggerSignatureHelp())
+    this.addAction('diagnosticFirst', severity => diagnosticManager.jumpFirst(severity))
     this.addAction('documentSymbols', async (bufnr?: number) => {
       if (!bufnr) {
         let doc = await workspace.document
@@ -273,6 +275,9 @@ export default class Plugin extends EventEmitter {
     this.addAction('outgoingCalls', (item?: CallHierarchyItem) => this.handler.callHierarchy.getOutgoing(item))
     this.addAction('semanticHighlight', () => this.handler.semanticHighlighter.highlightCurrent())
     this.addAction('showSemanticHighlightInfo', () => this.handler.semanticHighlighter.showHiglightInfo())
+    this.addAction('applyCodeActions', (callback: string) => {
+      return this.handler.codeActions.applyCodeActions(callback)
+    })
     commandManager.init(nvim, this)
   }
 

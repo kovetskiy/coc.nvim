@@ -1,5 +1,5 @@
 import { Neovim } from '@chemzqm/neovim'
-import { CancellationToken, CancellationTokenSource, Definition, Location, LocationLink, Position, TextDocument } from 'vscode-languageserver-protocol'
+import { CancellationToken, CancellationTokenSource, Definition, Hover, Location, LocationLink, MarkedString, MarkupContent, Position, TextDocument } from 'vscode-languageserver-protocol'
 import { URI } from 'vscode-uri'
 import languages from '../languages'
 import services from '../services'
@@ -74,6 +74,29 @@ export default class LocationsHandler {
     })
     await this.handleLocations(definition, openCommand)
     return true
+  }
+
+  public async getDefinition(): Promise<any> {
+    let { doc, position, winid } = await this.handler.getCurrentState()
+    let hovers = await this.handler.withRequestToken<Hover[]>('hover', token => {
+      return languages.getHover(doc.textDocument, position, token)
+    }, false)
+    if (hovers && hovers.length) {
+      let content = hovers[0].contents
+      if (typeof content == 'string') {
+        return content
+      }
+
+      if (MarkupContent.is(content)) {
+        return content.value.trim()
+      }
+
+      if (MarkedString.is(content)) {
+        return content.value.trim()
+      }
+    }
+
+    return ''
   }
 
   public async gotoDeclaration(openCommand?: string): Promise<boolean> {

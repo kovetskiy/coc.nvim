@@ -130,6 +130,35 @@ export default class CodeActions {
     this.nvim.command(`silent! call repeat#set("\\<Plug>(coc-fix-current)", -1)`, true)
   }
 
+  /**
+   * Invokes filtered by a callback codeActions.
+   *
+   * @returns {Promise<boolean>}
+   */
+  public async applyCodeActions(callback: string): Promise<boolean> {
+    let { doc } = await this.handler.getCurrentState()
+    if (!doc) return
+
+    let actions = await this.getCodeActions(doc)
+    if (!actions || actions.length == 0) {
+      return false
+    }
+
+    let result = await workspace.nvim.call(callback, [actions.map(a => a.title)])
+    if (!result || result.length == 0) {
+      return false
+    }
+
+    await result.map(async id => {
+      if (actions[id]) {
+        const action = actions[id]
+        if (action.edit) await workspace.applyEdit(action.edit)
+        if (action.command) commandManager.execute(action.command)
+      }
+    })
+    return true
+  }
+
   public async applyCodeAction(action: CodeAction): Promise<void> {
     if (action.disabled) {
       throw new Error(`Action "${action.title}" is disabled: ${action.disabled.reason}`)
@@ -137,6 +166,9 @@ export default class CodeActions {
     action = await this.handler.withRequestToken('resolve codeAction', token => {
       return languages.resolveCodeAction(action, token)
     })
+    if (!action) {
+      return
+    }
     let { edit, command } = action
     if (edit) await workspace.applyEdit(edit)
     if (command) commandManager.execute(command)
